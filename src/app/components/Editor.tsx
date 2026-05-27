@@ -238,7 +238,7 @@ const deleteDocument = async (id: string) => {
       }),
     ],
 
-    content: `<h1>Welcome 👋</h1><p>Start writing...</p>`,
+    content: '<p></p>',
 
     editorProps: {
       attributes: {
