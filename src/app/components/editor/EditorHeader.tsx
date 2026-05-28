@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, Moon, Sun } from 'lucide-react'
+import { FileText, History, Moon, Sun } from 'lucide-react'
 
 type EditorHeaderProps = {
   title: string
@@ -8,8 +8,10 @@ type EditorHeaderProps = {
   wordCount: number
   saveStatus: string
   darkMode: boolean
+  hasDocument: boolean
   onToggleDarkMode: () => void
   onOpenDocuments: () => void
+  onOpenVersionHistory: () => void
 }
 
 export function EditorHeader({
@@ -18,8 +20,10 @@ export function EditorHeader({
   wordCount,
   saveStatus,
   darkMode,
+  hasDocument,
   onToggleDarkMode,
   onOpenDocuments,
+  onOpenVersionHistory,
 }: EditorHeaderProps) {
   return (
     <div className="flex items-center justify-between gap-3 border-b p-6">
@@ -43,6 +47,20 @@ export function EditorHeader({
       >
         <FileText size={18} />
       </button>
+
+      {hasDocument && (
+        <button
+          onClick={onOpenVersionHistory}
+          className={`rounded-xl p-2 ${
+            darkMode
+              ? 'bg-zinc-800 hover:bg-zinc-700'
+              : 'bg-zinc-200 hover:bg-zinc-300'
+          }`}
+          title="Version history"
+        >
+          <History size={18} />
+        </button>
+      )}
 
       <button
         onClick={onToggleDarkMode}

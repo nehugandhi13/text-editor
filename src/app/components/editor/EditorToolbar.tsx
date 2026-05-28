@@ -30,6 +30,7 @@ type EditorToolbarProps = {
   editor: Editor
   darkMode: boolean
   onSave: () => void
+  onSaveVersion: () => void
   onImageUpload: () => void
 }
 
@@ -37,6 +38,7 @@ export function EditorToolbar({
   editor,
   darkMode,
   onSave,
+  onSaveVersion,
   onImageUpload,
 }: EditorToolbarProps) {
   const buttonClass = (active: boolean) =>
@@ -182,6 +184,17 @@ export function EditorToolbar({
         }`}
       >
         Save
+      </button>
+
+      <button
+        onClick={onSaveVersion}
+        className={`rounded-xl px-4 py-2 text-sm font-medium ${
+          darkMode
+            ? 'bg-zinc-700 text-white hover:bg-zinc-600'
+            : 'bg-zinc-300 text-black hover:bg-zinc-400'
+        }`}
+      >
+        Save Version
       </button>
 
       <div className="ml-auto flex items-center">

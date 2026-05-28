@@ -21,7 +21,8 @@ import { Bold, Italic } from 'lucide-react'
 import { DocumentsPanel } from './editor/DocumentsPanel'
 import { EditorHeader } from './editor/EditorHeader'
 import { EditorToolbar } from './editor/EditorToolbar'
-import type { DocumentRecord } from './editor/types'
+import { VersionHistoryPanel } from './editor/VersionHistoryPanel'
+import type { DocumentRecord, DocumentVersion } from './editor/types'
 
 const FontSize = Extension.create({
   name: 'fontSize',
@@ -56,6 +57,9 @@ export default function Editor() {
   const [documentId, setDocumentId] = useState<string | null>(null)
   const [documents, setDocuments] = useState<DocumentRecord[]>([])
   const [isDocumentsPanelOpen, setIsDocumentsPanelOpen] = useState(false)
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false)
+  const [versions, setVersions] = useState<DocumentVersion[]>([])
+  const [versionStatus, setVersionStatus] = useState('')
   const [saveStatus, setSaveStatus] = useState('Saved')
   const [wordCount, setWordCount] = useState(0)
 
@@ -133,8 +137,8 @@ export default function Editor() {
     setDocuments((data ?? []) as DocumentRecord[])
   }
 
-  const saveDocument = async () => {
-    if (!editor) return
+  const saveDocument = async (): Promise<string | null> => {
+    if (!editor) return null
     setSaveStatus('Saving...')
 
     if (documentId) {
@@ -150,12 +154,12 @@ export default function Editor() {
       if (error) {
         console.error(error)
         alert('Error updating document')
-      } else {
-        setSaveStatus('Saved')
+        return null
       }
 
+      setSaveStatus('Saved')
       await loadDocuments()
-      return
+      return documentId
     }
 
     const { data, error } = await supabase
@@ -166,11 +170,93 @@ export default function Editor() {
     if (error) {
       console.error(error)
       alert('Error saving document')
-    } else if (data?.[0]?.id) {
-      setDocumentId(data[0].id)
+      return null
+    }
+
+    const newId = data?.[0]?.id ?? null
+    if (newId) {
+      setDocumentId(newId)
       setSaveStatus('Saved')
       await loadDocuments()
     }
+    return newId
+  }
+
+  const loadVersions = async (id: string) => {
+    const { data, error } = await supabase
+      .from('document_versions')
+      .select('*')
+      .eq('document_id', id)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error(error)
+      setVersionStatus('Could not load versions')
+      return
+    }
+
+    setVersions((data ?? []) as DocumentVersion[])
+    setVersionStatus(
+      data?.length
+        ? `${data.length} saved version${data.length === 1 ? '' : 's'}`
+        : 'No saved versions yet'
+    )
+  }
+
+  const saveVersion = async () => {
+    if (!editor) return
+
+    const id = documentId ?? (await saveDocument())
+    if (!id) {
+      alert('Save the document first, then try again.')
+      return
+    }
+
+    setVersionStatus('Saving version...')
+
+    const { error } = await supabase.from('document_versions').insert({
+      document_id: id,
+      title,
+      content: editor.getJSON(),
+    })
+
+    if (error) {
+      console.error(error)
+      alert(
+        error.message.includes('document_versions')
+          ? 'Version history table not found. Run supabase/document_versions.sql in your Supabase SQL editor.'
+          : 'Error saving version'
+      )
+      setVersionStatus('')
+      return
+    }
+
+    setVersionStatus('Version saved')
+    await loadVersions(id)
+  }
+
+  const openVersionHistory = async () => {
+    if (!documentId) return
+    setIsVersionHistoryOpen(true)
+    await loadVersions(documentId)
+  }
+
+  const restoreVersion = async (version: DocumentVersion) => {
+    if (!editor) return
+
+    const confirmed = confirm(
+      'Restore this version? Your current edits will be replaced in the editor.'
+    )
+    if (!confirmed) return
+
+    setTitle(version.title || 'Untitled Document')
+    editor.commands.clearContent()
+    setTimeout(() => {
+      editor.commands.setContent(version.content as any)
+    }, 0)
+
+    setIsVersionHistoryOpen(false)
+    await saveDocument()
   }
 
   const openDocument = (doc: DocumentRecord) => {
@@ -182,6 +268,9 @@ export default function Editor() {
       editor.commands.setContent(doc.content as any)
     }, 0)
     setIsDocumentsPanelOpen(false)
+    setIsVersionHistoryOpen(false)
+    setVersions([])
+    setVersionStatus('')
   }
 
   const createNewDocument = () => {
@@ -190,6 +279,9 @@ export default function Editor() {
     editor?.commands.clearContent()
     setSaveStatus('Saved')
     setIsDocumentsPanelOpen(false)
+    setIsVersionHistoryOpen(false)
+    setVersions([])
+    setVersionStatus('')
   }
 
   const deleteDocument = async (id: string) => {
@@ -247,14 +339,17 @@ export default function Editor() {
             wordCount={wordCount}
             saveStatus={saveStatus}
             darkMode={darkMode}
+            hasDocument={!!documentId}
             onToggleDarkMode={() => setDarkMode((prev) => !prev)}
             onOpenDocuments={() => setIsDocumentsPanelOpen(true)}
+            onOpenVersionHistory={openVersionHistory}
           />
 
           <EditorToolbar
             editor={editor}
             darkMode={darkMode}
             onSave={saveDocument}
+            onSaveVersion={saveVersion}
             onImageUpload={triggerImageUpload}
           />
 
@@ -281,6 +376,15 @@ export default function Editor() {
         onCreate={createNewDocument}
         onOpenDocument={openDocument}
         onDeleteDocument={deleteDocument}
+      />
+
+      <VersionHistoryPanel
+        isOpen={isVersionHistoryOpen}
+        darkMode={darkMode}
+        versions={versions}
+        versionStatus={versionStatus}
+        onClose={() => setIsVersionHistoryOpen(false)}
+        onRestoreVersion={restoreVersion}
       />
     </>
   )
