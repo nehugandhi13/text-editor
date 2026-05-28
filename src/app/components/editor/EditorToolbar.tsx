@@ -1,9 +1,12 @@
 'use client'
 
+import { useEffect, useRef, useState } from 'react'
+
 import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  AlignVerticalSpaceAround,
   Bold,
   Heading1,
   Heading2,
@@ -26,6 +29,22 @@ const fonts = [
   { name: 'JetBrains Mono', className: 'font-mono' },
 ]
 
+const lineHeights = [
+  { label: 'Default', value: '' },
+  { label: 'Single', value: '1' },
+  { label: '1.15', value: '1.15' },
+  { label: '1.5', value: '1.5' },
+  { label: 'Double', value: '2' },
+]
+
+const letterSpacings = [
+  { label: 'Default', value: '' },
+  { label: 'Tight', value: '-0.05em' },
+  { label: 'Normal', value: '0' },
+  { label: 'Wide', value: '0.05em' },
+  { label: 'Wider', value: '0.1em' },
+]
+
 type EditorToolbarProps = {
   editor: Editor
   darkMode: boolean
@@ -41,6 +60,25 @@ export function EditorToolbar({
   onSaveVersion,
   onImageUpload,
 }: EditorToolbarProps) {
+  const [isSpacingOpen, setIsSpacingOpen] = useState(false)
+  const spacingRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!isSpacingOpen) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        spacingRef.current &&
+        !spacingRef.current.contains(event.target as Node)
+      ) {
+        setIsSpacingOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isSpacingOpen])
+
   const buttonClass = (active: boolean) =>
     `flex items-center justify-center rounded-xl p-2 transition ${
       active
@@ -95,6 +133,93 @@ export function EditorToolbar({
         <option value="24px">24</option>
         <option value="32px">32</option>
       </select>
+
+      <div ref={spacingRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setIsSpacingOpen((open) => !open)}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium ${
+            darkMode ? 'bg-zinc-800 text-white' : 'bg-zinc-200 text-black'
+          } ${isSpacingOpen ? (darkMode ? 'ring-2 ring-zinc-500' : 'ring-2 ring-zinc-400') : ''}`}
+        >
+          <AlignVerticalSpaceAround size={16} />
+          Spacing
+        </button>
+
+        {isSpacingOpen && (
+          <div
+            className={`absolute left-0 top-12 z-50 w-56 rounded-xl border shadow-xl ${
+              darkMode
+                ? 'border-zinc-700 bg-zinc-900 text-white'
+                : 'border-zinc-200 bg-white text-black'
+            }`}
+          >
+            <div
+              className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${
+                darkMode ? 'text-zinc-400' : 'text-zinc-500'
+              }`}
+            >
+              Line height
+            </div>
+            {lineHeights.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().setLineHeight(option.value).run()
+                  setIsSpacingOpen(false)
+                }}
+                className={`w-full px-4 py-2 text-left text-sm transition ${
+                  darkMode ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+
+            <div
+              className={`my-1 border-t ${darkMode ? 'border-zinc-700' : 'border-zinc-200'}`}
+            />
+
+            <div
+              className={`px-3 py-2 text-xs font-semibold uppercase tracking-wide ${
+                darkMode ? 'text-zinc-400' : 'text-zinc-500'
+              }`}
+            >
+              Letter spacing
+            </div>
+            {letterSpacings.map((option) => (
+              <button
+                key={option.label}
+                type="button"
+                onClick={() => {
+                  if (!option.value) {
+                    editor
+                      .chain()
+                      .focus()
+                      .setMark('textStyle', { letterSpacing: null })
+                      .removeEmptyTextStyle()
+                      .run()
+                  } else {
+                    editor
+                      .chain()
+                      .focus()
+                      .setMark('textStyle', { letterSpacing: option.value })
+                      .run()
+                  }
+                  setIsSpacingOpen(false)
+                }}
+                className={`w-full px-4 py-2 text-left text-sm transition ${
+                  darkMode ? 'hover:bg-zinc-800' : 'hover:bg-zinc-100'
+                }`}
+                style={option.value ? { letterSpacing: option.value } : undefined}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       <input
         type="color"

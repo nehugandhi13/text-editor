@@ -51,6 +51,59 @@ const FontSize = Extension.create({
   },
 })
 
+const LetterSpacing = Extension.create({
+  name: 'letterSpacing',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['textStyle'],
+        attributes: {
+          letterSpacing: {
+            default: null,
+            parseHTML: (el) => el.style.letterSpacing?.replace(/['"]+/g, ''),
+            renderHTML: (attrs) =>
+              attrs.letterSpacing
+                ? { style: `letter-spacing: ${attrs.letterSpacing}` }
+                : {},
+          },
+        },
+      },
+    ]
+  },
+})
+
+const LineHeight = Extension.create({
+  name: 'lineHeight',
+  addGlobalAttributes() {
+    return [
+      {
+        types: ['paragraph', 'heading'],
+        attributes: {
+          lineHeight: {
+            default: null,
+            parseHTML: (el) => el.style.lineHeight || null,
+            renderHTML: (attrs) =>
+              attrs.lineHeight ? { style: `line-height: ${attrs.lineHeight}` } : {},
+          },
+        },
+      },
+    ]
+  },
+  addCommands() {
+    return {
+      setLineHeight:
+        (lineHeight: string) =>
+        ({ editor, chain }: any) => {
+          const value = lineHeight || null
+          if (editor.isActive('heading')) {
+            return chain().updateAttributes('heading', { lineHeight: value }).run()
+          }
+          return chain().updateAttributes('paragraph', { lineHeight: value }).run()
+        },
+    } as any
+  },
+})
+
 export default function Editor() {
   const [title, setTitle] = useState('Untitled Document')
   const [darkMode, setDarkMode] = useState(true)
@@ -85,6 +138,8 @@ export default function Editor() {
       Image,
       TextStyle,
       FontSize,
+      LetterSpacing,
+      LineHeight,
       Color,
       Highlight,
       Underline,
