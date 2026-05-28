@@ -78,6 +78,13 @@ export default function Editor() {
   const [documents, setDocuments] = useState<any[]>([])
 
   const [saveStatus, setSaveStatus] = useState('Saved')
+  const [wordCount, setWordCount] = useState(0)
+
+  const countWords = (text: string) => {
+    const trimmedText = text.trim()
+    if (!trimmedText) return 0
+    return trimmedText.split(/\s+/).length
+  }
 
   const saveDocument = async () => {
   if (!editor) return
@@ -239,6 +246,12 @@ const deleteDocument = async (id: string) => {
     ],
 
     content: '<p></p>',
+    onCreate: ({ editor }) => {
+      setWordCount(countWords(editor.getText()))
+    },
+    onUpdate: ({ editor }) => {
+      setWordCount(countWords(editor.getText()))
+    },
 
     editorProps: {
       attributes: {
@@ -317,6 +330,10 @@ return (
           onChange={(e) => setTitle(e.target.value)}
           className="w-full bg-transparent text-3xl font-bold outline-none"
         />
+
+      <div className="mr-4 text-sm opacity-70">
+        {wordCount} words
+      </div>
 
       <div className="mr-4 text-sm opacity-70">
         {saveStatus}
