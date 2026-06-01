@@ -71,6 +71,38 @@ body {
   pointer-events: none;
 }
 
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  border: 1px solid var(--table-border-color, #000);
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid var(--table-border-color, #000);
+  padding: 0.75rem;
+  min-width: 4rem;
+}
+
+.ProseMirror th {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  position: relative;
+}
+
+.ProseMirror .resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 10px;
+  cursor: col-resize;
+  z-index: 10;
+}
+
 :root {
   --font-inter: 'Inter', sans-serif;
   --font-poppins: 'Poppins', sans-serif;

@@ -16,6 +16,7 @@ import {
   ListOrdered,
   Redo2,
   Strikethrough,
+  Table,
   UnderlineIcon,
   Undo2,
 } from 'lucide-react'
@@ -61,7 +62,11 @@ export function EditorToolbar({
   onImageUpload,
 }: EditorToolbarProps) {
   const [isSpacingOpen, setIsSpacingOpen] = useState(false)
+  const [isTableActionsOpen, setIsTableActionsOpen] = useState(false)
+  const [tableRows, setTableRows] = useState(3)
+  const [tableCols, setTableCols] = useState(3)
   const spacingRef = useRef<HTMLDivElement>(null)
+  const tableActionsRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!isSpacingOpen) return
@@ -78,6 +83,22 @@ export function EditorToolbar({
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [isSpacingOpen])
+
+  useEffect(() => {
+    if (!isTableActionsOpen) return
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        tableActionsRef.current &&
+        !tableActionsRef.current.contains(event.target as Node)
+      ) {
+        setIsTableActionsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [isTableActionsOpen])
 
   const buttonClass = (active: boolean) =>
     `flex items-center justify-center rounded-xl p-2 transition ${
@@ -217,6 +238,137 @@ export function EditorToolbar({
                 {option.label}
               </button>
             ))}
+          </div>
+        )}
+      </div>
+
+      <div ref={tableActionsRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setIsTableActionsOpen((open) => !open)}
+          className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium ${
+            darkMode ? 'bg-zinc-800 text-white' : 'bg-zinc-200 text-black'
+          } ${isTableActionsOpen ? (darkMode ? 'ring-2 ring-zinc-500' : 'ring-2 ring-zinc-400') : ''}`}
+        >
+          <Table size={16} />
+          Table
+        </button>
+
+        {isTableActionsOpen && (
+          <div
+            className={`absolute left-0 top-12 z-50 w-72 rounded-xl border shadow-xl ${
+              darkMode
+                ? 'border-zinc-700 bg-zinc-900 text-white'
+                : 'border-zinc-200 bg-white text-black'
+            }`}
+          >
+            <div className="px-4 py-3">
+              <div className="mb-3 flex items-center gap-2 text-sm font-medium uppercase tracking-wide text-zinc-400">
+                Table size
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <label className="space-y-1 text-xs">
+                  Rows
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={tableRows}
+                    onChange={(e) => setTableRows(Math.max(1, Math.min(20, Number(e.target.value))))}
+                    className={`w-full rounded-xl border px-3 py-2 text-sm ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-300 text-black'}`}
+                  />
+                </label>
+                <label className="space-y-1 text-xs">
+                  Columns
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={tableCols}
+                    onChange={(e) => setTableCols(Math.max(1, Math.min(20, Number(e.target.value))))}
+                    className={`w-full rounded-xl border px-3 py-2 text-sm ${darkMode ? 'bg-zinc-800 border-zinc-700 text-white' : 'bg-white border-zinc-300 text-black'}`}
+                  />
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  editor.chain().focus().insertTable({ rows: tableRows, cols: tableCols, withHeaderRow: true }).run()
+                  setIsTableActionsOpen(false)
+                }}
+                className={`mt-3 w-full rounded-xl px-4 py-3 text-sm font-medium ${
+                  darkMode ? 'bg-blue-600 text-white hover:bg-blue-500' : 'bg-blue-500 text-white hover:bg-blue-400'
+                }`}
+              >
+                Insert {tableRows}x{tableCols} table
+              </button>
+            </div>
+            <div className={`my-1 border-t ${darkMode ? 'border-zinc-700' : 'border-zinc-200'}`} />
+            <button
+              type="button"
+              disabled={!editor.can().chain().focus().addRowAfter().run()}
+              onClick={() => {
+                editor.chain().focus().addRowAfter().run()
+                setIsTableActionsOpen(false)
+              }}
+              className={`w-full px-4 py-3 text-left text-sm transition ${
+                darkMode ? 'hover:bg-zinc-800 disabled:text-zinc-500' : 'hover:bg-zinc-100 disabled:text-zinc-400'
+              } ${!editor.can().chain().focus().addRowAfter().run() ? 'cursor-not-allowed opacity-50' : ''}`}
+            >
+              Add row after
+            </button>
+            <button
+              type="button"
+              disabled={!editor.can().chain().focus().addColumnAfter().run()}
+              onClick={() => {
+                editor.chain().focus().addColumnAfter().run()
+                setIsTableActionsOpen(false)
+              }}
+              className={`w-full px-4 py-3 text-left text-sm transition ${
+                darkMode ? 'hover:bg-zinc-800 disabled:text-zinc-500' : 'hover:bg-zinc-100 disabled:text-zinc-400'
+              } ${!editor.can().chain().focus().addColumnAfter().run() ? 'cursor-not-allowed opacity-50' : ''}`}
+            >
+              Add column after
+            </button>
+            <button
+              type="button"
+              disabled={!editor.can().chain().focus().deleteRow().run()}
+              onClick={() => {
+                editor.chain().focus().deleteRow().run()
+                setIsTableActionsOpen(false)
+              }}
+              className={`w-full px-4 py-3 text-left text-sm transition ${
+                darkMode ? 'hover:bg-zinc-800 disabled:text-zinc-500' : 'hover:bg-zinc-100 disabled:text-zinc-400'
+              } ${!editor.can().chain().focus().deleteRow().run() ? 'cursor-not-allowed opacity-50' : ''}`}
+            >
+              Delete row
+            </button>
+            <button
+              type="button"
+              disabled={!editor.can().chain().focus().deleteColumn().run()}
+              onClick={() => {
+                editor.chain().focus().deleteColumn().run()
+                setIsTableActionsOpen(false)
+              }}
+              className={`w-full px-4 py-3 text-left text-sm transition ${
+                darkMode ? 'hover:bg-zinc-800 disabled:text-zinc-500' : 'hover:bg-zinc-100 disabled:text-zinc-400'
+              } ${!editor.can().chain().focus().deleteColumn().run() ? 'cursor-not-allowed opacity-50' : ''}`}
+            >
+              Delete column
+            </button>
+            <button
+              type="button"
+              disabled={!editor.can().chain().focus().deleteTable().run()}
+              onClick={() => {
+                editor.chain().focus().deleteTable().run()
+                setIsTableActionsOpen(false)
+              }}
+              className={`w-full px-4 py-3 text-left text-sm transition ${
+                darkMode ? 'hover:bg-zinc-800 disabled:text-zinc-500' : 'hover:bg-zinc-100 disabled:text-zinc-400'
+              } ${!editor.can().chain().focus().deleteTable().run() ? 'cursor-not-allowed opacity-50' : ''}`}
+            >
+              Delete table
+            </button>
           </div>
         )}
       </div>

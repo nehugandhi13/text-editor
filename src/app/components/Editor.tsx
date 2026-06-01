@@ -16,6 +16,10 @@ import Color from '@tiptap/extension-color'
 import Highlight from '@tiptap/extension-highlight'
 import TextAlign from '@tiptap/extension-text-align'
 import FontFamily from '@tiptap/extension-font-family'
+import { Table } from '@tiptap/extension-table'
+import TableRow from '@tiptap/extension-table-row'
+import TableCell from '@tiptap/extension-table-cell'
+import TableHeader from '@tiptap/extension-table-header'
 
 import { Bold, Italic } from 'lucide-react'
 import { DocumentsPanel } from './editor/DocumentsPanel'
@@ -145,6 +149,10 @@ export default function Editor() {
       Underline,
       FontFamily.configure({ types: ['textStyle'] }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      Table.configure({ resizable: true }),
+      TableRow,
+      TableCell,
+      TableHeader,
     ],
     content: '<p></p>',
     onCreate: ({ editor }) => setWordCount(countWords(editor.getText())),
@@ -387,6 +395,9 @@ export default function Editor() {
               ? 'border-zinc-800 bg-zinc-900 text-white'
               : 'border-zinc-300 bg-white text-black'
           }`}
+          style={{
+            '--table-border-color': darkMode ? '#ffffff' : '#000000',
+          } as React.CSSProperties}
         >
           <EditorHeader
             title={title}
